@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   mobile:
-    name: Flutter analyze and test
+    name: Flutter analyze, test and APK build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -32,11 +32,24 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      - name: Generate Android platform files
+        run: flutter create --platforms=android --project-name dakkana_mobile .
+
       - name: Analyze
         run: flutter analyze
 
       - name: Test
         run: flutter test
+
+      - name: Build debug APK
+        run: flutter build apk --debug
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: dakkana-debug-apk
+          path: apps/mobile/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
 
   backend:
     name: NestJS build and test
