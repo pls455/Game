@@ -18,7 +18,7 @@ export class CustomersService {
     const storeId = await this.storeIdForUser(userId);
     const safeLimit = Math.min(Math.max(limit, 1), 50);
     const result = await this.db.query(
-      `SELECT c.*, COALESCE(c.opening_balance + COALESCE((SELECT SUM(CASE WHEN ct.type IN ('sale','adjustment','opening_balance') THEN ct.amount ELSE -ct.amount END) FROM customer_transactions ct WHERE ct.customer_id=c.id),0), c.opening_balance) AS balance
+      `SELECT c.*, c.opening_balance + COALESCE((SELECT SUM(CASE WHEN ct.type IN ('sale','adjustment') THEN ct.amount WHEN ct.type IN ('payment','return') THEN -ct.amount ELSE 0 END) FROM customer_transactions ct WHERE ct.customer_id=c.id),0) AS balance
        FROM customers c WHERE c.store_id=$1 AND c.deleted_at IS NULL AND ($2='' OR c.name ILIKE '%'||$2||'%' OR COALESCE(c.phone,'') ILIKE '%'||$2||'%') ORDER BY c.name LIMIT $3`,
       [storeId, search.trim(), safeLimit],
     );
@@ -28,25 +28,17 @@ export class CustomersService {
   async create(userId: string, input: CustomerInput) {
     const storeId = await this.storeIdForUser(userId);
     const id = randomUUID();
-    return this.db.transaction(async (client) => {
-      const result = await client.query(
-        `INSERT INTO customers (id,store_id,name,phone,address,notes,opening_balance) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-        [id, storeId, input.name.trim(), input.phone?.trim() || null, input.address?.trim() || null, input.notes?.trim() || null, input.openingBalance ?? 0],
-      );
-      if ((input.openingBalance ?? 0) !== 0) {
-        await client.query(
-          `INSERT INTO customer_transactions (id,store_id,customer_id,type,amount,note,created_by) VALUES ($1,$2,$3,'opening_balance',$4,$5,$6)`,
-          [randomUUID(), storeId, id, Math.abs(input.openingBalance ?? 0), 'رصيد افتتاحي', userId],
-        );
-      }
-      return result.rows[0];
-    });
+    const result = await this.db.query(
+      `INSERT INTO customers (id,store_id,name,phone,address,notes,opening_balance) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      [id, storeId, input.name.trim(), input.phone?.trim() || null, input.address?.trim() || null, input.notes?.trim() || null, input.openingBalance ?? 0],
+    );
+    return result.rows[0];
   }
 
   async get(userId: string, customerId: string) {
     const storeId = await this.storeIdForUser(userId);
     const result = await this.db.query(
-      `SELECT c.*, COALESCE(c.opening_balance + COALESCE((SELECT SUM(CASE WHEN ct.type IN ('sale','adjustment','opening_balance') THEN ct.amount ELSE -ct.amount END) FROM customer_transactions ct WHERE ct.customer_id=c.id),0), c.opening_balance) AS balance FROM customers c WHERE c.id=$1 AND c.store_id=$2 AND c.deleted_at IS NULL`,
+      `SELECT c.*, c.opening_balance + COALESCE((SELECT SUM(CASE WHEN ct.type IN ('sale','adjustment') THEN ct.amount WHEN ct.type IN ('payment','return') THEN -ct.amount ELSE 0 END) FROM customer_transactions ct WHERE ct.customer_id=c.id),0) AS balance FROM customers c WHERE c.id=$1 AND c.store_id=$2 AND c.deleted_at IS NULL`,
       [customerId, storeId],
     );
     if (!result.rowCount) throw new NotFoundException('مش لاقيين هالزبون');
