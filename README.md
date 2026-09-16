@@ -1,14 +1,26 @@
-# HOTSHOT
+# دَكانة — Dakkana
 
-لعبة تصويب Multiplayer محلية للأندرويد، تعمل بدون إنترنت عبر نفس شبكة Wi‑Fi / Hotspot.
+> كل حساب دَكانتك بإيدك
 
-## الهدف
-- Host محلي للمباراة.
-- اتصال اللاعبين داخل الشبكة المحلية فقط.
-- لا Firebase ولا خادم إنترنت ولا حسابات.
-- تصميم اللعبة ليكون قابلًا للتوسع إلى 2–8 لاعبين.
+تطبيق عربي RTL لإدارة الدكاكين والمتاجر الصغيرة، مصمم ليعمل **Offline-first** مع مزامنة آمنة متعددة الأجهزة.
 
-## المرحلة الحالية
-المرحلة الأولى: تأسيس بنية المشروع وتجهيز طبقة الشبكة المحلية قبل إضافة نظام القتال والخرائط.
+## Stack
+- Mobile: Flutter + SQLite
+- Backend: NestJS + TypeScript
+- Database: PostgreSQL
+- API: REST `/api/v1`
+- Auth: JWT + Refresh Tokens
 
-صنع بواسطة كرم - أبو إبراهيم.
+## Monorepo
+```text
+apps/mobile       Flutter application
+apps/backend      NestJS API
+packages/shared   Shared contracts/constants
+ database/        PostgreSQL schema/migrations
+ docs/             PRD, architecture, API and sync design
+```
+
+## MVP
+Authentication, store setup, customers, customer accounts/payments, products, inventory, sales, purchases, suppliers, expenses, cashbox, reports, offline-first sync, backup and PDF statements.
+
+> المشروع بدأ من الصفر. تم استبدال محتوى المشروع القديم الخاص باللعبة بهذا الأساس الجديد.
